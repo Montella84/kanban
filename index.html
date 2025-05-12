@@ -3,59 +3,109 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kanban Task Tracker</title>
+    <title>Daily Tasks</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Space Grotesk', sans-serif;
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            color: #e2e8f0;
+            background: #ffffff;
+            color: #333333;
             min-height: 100vh;
             overscroll-behavior: none;
         }
         .kanban-column {
             min-height: 300px;
-            background: rgba(30, 41, 59, 0.7);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 1rem;
+            background: #ffffff;
+            border: 1px solid #e5e5e5;
+            border-radius: 1.5rem;
             padding: 1.5rem;
             transition: all 0.3s ease;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
         }
         .kanban-column.drag-over {
-            background: rgba(51, 65, 85, 0.8);
+            background: #fff9f5;
             transform: scale(1.02);
-            box-shadow: 0 0 20px rgba(56, 189, 248, 0.2);
+            box-shadow: 0 4px 20px rgba(255, 149, 0, 0.15);
         }
         .task {
-            background: rgba(15, 23, 42, 0.8);
+            background: #ffffff;
             padding: 1rem 1.25rem;
-            border-radius: 0.75rem;
+            border-radius: 1rem;
             margin-bottom: 1rem;
-            cursor: grab;
-            border: 1px solid rgba(56, 189, 248, 0.2);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
-                        0 2px 4px -1px rgba(0, 0, 0, 0.06),
-                        0 0 0 1px rgba(56, 189, 248, 0.1);
+            cursor: pointer;
+            border: 1px solid #e5e5e5;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
             transition: all 0.3s ease;
             position: relative;
-            overflow: hidden;
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
         }
         .task::before {
+            display: none;
+        }
+        .task-status {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 2px solid #22c55e;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+        .task-status.completed::after {
+            content: '✓';
+            color: #22c55e;
+            font-size: 14px;
+        }
+        .task-status.pending {
+            border-color: #ff9500;
+        }
+        .task-status.pending::after {
             content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 2px;
-            background: linear-gradient(90deg, #38bdf8, #818cf8);
-            opacity: 0.5;
+            width: 8px;
+            height: 8px;
+            background: #ff9500;
+            border-radius: 50%;
+        }
+        .task-info {
+            flex-grow: 1;
+        }
+        .task-type {
+            font-size: 0.85rem;
+            color: #666666;
+            margin-bottom: 0.25rem;
+        }
+        .task-duration {
+            font-size: 0.85rem;
+            color: #666666;
+            margin-top: 0.25rem;
+        }
+        .task-thumbnail {
+            width: 80px;
+            height: 50px;
+            border-radius: 0.5rem;
+            background: linear-gradient(135deg, #ff9500 0%, #ffcc00 100%);
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+        .task-thumbnail.blue {
+            background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+        }
+        .task-thumbnail.yellow {
+            background: linear-gradient(135deg, #fbbf24 0%, #fcd34d 100%);
         }
         .task:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 15px -3px rgba(56, 189, 248, 0.2);
-            border-color: rgba(56, 189, 248, 0.4);
+            box-shadow: 0 4px 12px rgba(255, 149, 0, 0.15);
+            border-color: #ffcc00;
         }
         .task:active {
             cursor: grabbing;
@@ -63,25 +113,26 @@
         }
         .task.dragging {
             opacity: 0.7;
-            box-shadow: 0 20px 25px -5px rgba(56, 189, 248, 0.25);
+            box-shadow: 0 8px 20px rgba(255, 149, 0, 0.2);
         }
         .task-input {
-            background: rgba(15, 23, 42, 0.8);
-            border-radius: 0.75rem;
+            background: #ffffff;
+            border-radius: 1rem;
             padding: 1rem 1.25rem;
-            border: 1px solid rgba(56, 189, 248, 0.2);
-            color: #e2e8f0;
+            border: 1px solid #e5e5e5;
+            color: #333333;
             transition: all 0.3s ease;
+            width: 100%;
         }
         .task-input:focus {
             outline: none;
-            border-color: #38bdf8;
-            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.3);
+            border-color: #ff9500;
+            box-shadow: 0 0 0 3px rgba(255, 149, 0, 0.1);
         }
         .add-task-btn {
-            border-radius: 0.75rem;
+            border-radius: 1rem;
             padding: 1rem 2rem;
-            background: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
+            background: linear-gradient(135deg, #ff9500 0%, #ffcc00 100%);
             color: white;
             font-weight: 600;
             transition: all 0.3s ease;
@@ -91,11 +142,11 @@
         }
         .add-task-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 0 20px rgba(56, 189, 248, 0.4);
+            box-shadow: 0 4px 12px rgba(255, 149, 0, 0.3);
         }
         .delete-btn {
             font-size: 0.9rem;
-            color: #f43f5e;
+            color: #ff6b6b;
             cursor: pointer;
             float: right;
             padding: 0.3rem;
@@ -103,48 +154,81 @@
             line-height: 1;
             opacity: 0.7;
             transition: all 0.2s;
-            background: rgba(244, 63, 94, 0.1);
+            background: rgba(255, 107, 107, 0.1);
         }
         .delete-btn:hover {
             opacity: 1;
-            background: rgba(244, 63, 94, 0.2);
+            background: rgba(255, 107, 107, 0.2);
             transform: scale(1.1);
         }
         .task-content {
             word-break: break-word;
+            color: #333333;
         }
         .deadline-info {
             font-size: 0.85rem;
             margin-top: 0.5rem;
             padding-top: 0.5rem;
-            border-top: 1px solid rgba(56, 189, 248, 0.2);
+            border-top: 1px solid #e5e5e5;
             display: flex;
             align-items: center;
             gap: 0.5rem;
-            color: #94a3b8;
+            color: #666666;
         }
         .deadline-info.urgent {
-            color: #f43f5e;
+            color: #ff6b6b;
         }
         .deadline-info.near {
-            color: #fbbf24;
+            color: #ff9500;
+        }
+        .column-header {
+            position: relative;
+            padding-bottom: 1rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid #e5e5e5;
+            color: #333333;
+            font-weight: 600;
+        }
+        .column-header::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 50%;
+            height: 2px;
+            background: linear-gradient(90deg, #ff9500, transparent);
+        }
+        /* Custom scrollbar */
+        .task-list {
+            max-height: calc(100vh - 300px);
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 149, 0, 0.5) rgba(0, 0, 0, 0.1);
+        }
+        .task-list::-webkit-scrollbar {
+            width: 6px;
+        }
+        .task-list::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 3px;
+        }
+        .task-list::-webkit-scrollbar-thumb {
+            background: rgba(255, 149, 0, 0.5);
+            border-radius: 3px;
         }
         .deadline-picker {
-            background: rgba(15, 23, 42, 0.8);
-            border: 1px solid rgba(56, 189, 248, 0.2);
-            color: #e2e8f0;
+            background: #ffffff;
+            border: 1px solid #e5e5e5;
+            color: #333333;
             border-radius: 0.5rem;
             padding: 0.5rem;
             margin-top: 0.5rem;
             width: 100%;
         }
-        .deadline-picker::-webkit-calendar-picker-indicator {
-            filter: invert(1);
-        }
         .deadline-toggle {
-            background: rgba(56, 189, 248, 0.1);
-            border: 1px solid rgba(56, 189, 248, 0.2);
-            color: #38bdf8;
+            background: rgba(255, 149, 0, 0.1);
+            border: 1px solid rgba(255, 149, 0, 0.2);
+            color: #ff9500;
             padding: 0.5rem;
             border-radius: 0.5rem;
             cursor: pointer;
@@ -156,81 +240,21 @@
             justify-content: center;
         }
         .deadline-toggle:hover {
-            background: rgba(56, 189, 248, 0.2);
-        }
-        .deadline-input-wrapper {
-            position: relative;
-            display: flex;
-            gap: 0.5rem;
-            width: 100%;
-        }
-        .deadline-text {
-            display: none;
-            background: rgba(15, 23, 42, 0.8);
-            border: 1px solid rgba(56, 189, 248, 0.2);
-            color: #e2e8f0;
-            border-radius: 0.5rem;
-            padding: 0.5rem;
-            width: 100%;
-        }
-        .deadline-text::placeholder {
-            color: #64748b;
-        }
-        .deadline-text.active {
-            display: block;
-        }
-        .deadline-picker.hidden {
-            display: none;
-        }
-        /* Column header styles */
-        .column-header {
-            position: relative;
-            padding-bottom: 1rem;
-            margin-bottom: 1.5rem;
-            border-bottom: 2px solid rgba(56, 189, 248, 0.2);
-        }
-        .column-header::after {
-            content: '';
-            position: absolute;
-            bottom: -2px;
-            left: 0;
-            width: 50%;
-            height: 2px;
-            background: linear-gradient(90deg, #38bdf8, transparent);
-        }
-        /* Custom scrollbar */
-        .task-list {
-            max-height: calc(100vh - 300px);
-            overflow-y: auto;
-            scrollbar-width: thin;
-            scrollbar-color: rgba(56, 189, 248, 0.5) rgba(15, 23, 42, 0.2);
-        }
-        .task-list::-webkit-scrollbar {
-            width: 6px;
-        }
-        .task-list::-webkit-scrollbar-track {
-            background: rgba(15, 23, 42, 0.2);
-            border-radius: 3px;
-        }
-        .task-list::-webkit-scrollbar-thumb {
-            background: rgba(56, 189, 248, 0.5);
-            border-radius: 3px;
+            background: rgba(255, 149, 0, 0.2);
         }
     </style>
 </head>
 <body class="p-4 md:p-8">
     <div class="container mx-auto max-w-6xl">
-        <header class="mb-12 text-center">
-            <h1 class="text-5xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-indigo-400 text-transparent bg-clip-text">Kanban Task Board</h1>
-            <p class="text-blue-200 text-lg">Organize your tasks and get things done!</p>
+        <header class="mb-8 text-left">
+            <h1 class="text-3xl font-bold mb-2 text-gray-800">Start your day</h1>
         </header>
 
-        <div class="mb-8 p-8 rounded-2xl" style="background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1);">
-            <h2 class="text-2xl font-semibold mb-4 text-blue-200">Add New Task</h2>
+        <div class="mb-8 p-6 rounded-2xl bg-white" style="border: 1px solid #e5e5e5;">
             <div class="flex flex-col gap-4">
                 <input type="text" id="new-task-input" class="task-input flex-grow" placeholder="Enter task description...">
                 <div class="flex flex-col sm:flex-row gap-4">
-                    <div class="deadline-input-wrapper">
+                    <div class="deadline-input-wrapper relative flex gap-2 flex-grow">
                         <input type="datetime-local" id="task-deadline" class="deadline-picker" placeholder="Select or enter deadline">
                         <input type="text" id="task-deadline-text" class="deadline-text" placeholder="Enter deadline (e.g. tomorrow 3pm, 2024-05-12 14:30)">
                         <button id="deadline-toggle" class="deadline-toggle" title="Toggle between date picker and text input">📅</button>
@@ -240,22 +264,49 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div id="todo" class="kanban-column" data-column-id="todo">
-                <h2 class="column-header text-xl font-semibold text-blue-300">To Do 🔥</h2>
+                <h2 class="column-header text-xl">Managing Stress</h2>
                 <div class="task-list space-y-4">
+                    <div class="task">
+                        <div class="task-status completed"></div>
+                        <div class="task-info">
+                            <div class="task-type">Video</div>
+                            <div class="task-content">Managing Stress</div>
+                            <div class="task-duration">2 min</div>
+                        </div>
+                        <div class="task-thumbnail">MS</div>
+                    </div>
                 </div>
             </div>
 
             <div id="inprogress" class="kanban-column" data-column-id="inprogress">
-                <h2 class="column-header text-xl font-semibold text-yellow-300">In Progress 🚀</h2>
+                <h2 class="column-header text-xl">Feeling Overwhelmed</h2>
                 <div class="task-list space-y-4">
+                    <div class="task">
+                        <div class="task-status completed"></div>
+                        <div class="task-info">
+                            <div class="task-type">Meditation</div>
+                            <div class="task-content">Feeling Overwhelmed</div>
+                            <div class="task-duration">3-4 min</div>
+                        </div>
+                        <div class="task-thumbnail blue">FO</div>
+                    </div>
                 </div>
             </div>
 
             <div id="done" class="kanban-column" data-column-id="done">
-                <h2 class="column-header text-xl font-semibold text-green-300">Done 🎉</h2>
+                <h2 class="column-header text-xl">Understanding Meditation</h2>
                 <div class="task-list space-y-4">
+                    <div class="task">
+                        <div class="task-status pending"></div>
+                        <div class="task-info">
+                            <div class="task-type">Today's Meditation</div>
+                            <div class="task-content">Understanding Meditation</div>
+                            <div class="task-duration">3-20 min</div>
+                        </div>
+                        <div class="task-thumbnail yellow">UM</div>
+                    </div>
                 </div>
             </div>
         </div>
