@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kanban Task Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #e2e8f0;
+            min-height: 100vh;
+            overscroll-behavior: none;
+        }
+        .kanban-column {
+            min-height: 300px;
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+        .kanban-column.drag-over {
+            background: rgba(51, 65, 85, 0.8);
+            transform: scale(1.02);
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.2);
+        }
+        .task {
+            background: rgba(15, 23, 42, 0.8);
+            padding: 1rem 1.25rem;
+            border-radius: 0.75rem;
+            margin-bottom: 1rem;
+            cursor: grab;
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+                        0 2px 4px -1px rgba(0, 0, 0, 0.06),
+                        0 0 0 1px rgba(56, 189, 248, 0.1);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .task::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #38bdf8, #818cf8);
+            opacity: 0.5;
+        }
+        .task:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 15px -3px rgba(56, 189, 248, 0.2);
+            border-color: rgba(56, 189, 248, 0.4);
+        }
+        .task:active {
+            cursor: grabbing;
+            transform: scale(1.03);
+        }
+        .task.dragging {
+            opacity: 0.7;
+            box-shadow: 0 20px 25px -5px rgba(56, 189, 248, 0.25);
+        }
+        .task-input {
+            background: rgba(15, 23, 42, 0.8);
+            border-radius: 0.75rem;
+            padding: 1rem 1.25rem;
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            color: #e2e8f0;
+            transition: all 0.3s ease;
+        }
+        .task-input:focus {
+            outline: none;
+            border-color: #38bdf8;
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.3);
+        }
+        .add-task-btn {
+            border-radius: 0.75rem;
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
+            color: white;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .add-task-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.4);
+        }
+        .delete-btn {
+            font-size: 0.9rem;
+            color: #f43f5e;
+            cursor: pointer;
+            float: right;
+            padding: 0.3rem;
+            border-radius: 50%;
+            line-height: 1;
+            opacity: 0.7;
+            transition: all 0.2s;
+            background: rgba(244, 63, 94, 0.1);
+        }
+        .delete-btn:hover {
+            opacity: 1;
+            background: rgba(244, 63, 94, 0.2);
+            transform: scale(1.1);
+        }
+        .task-content {
+            word-break: break-word;
+        }
+        .deadline-info {
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+            padding-top: 0.5rem;
+            border-top: 1px solid rgba(56, 189, 248, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #94a3b8;
+        }
+        .deadline-info.urgent {
+            color: #f43f5e;
+        }
+        .deadline-info.near {
+            color: #fbbf24;
+        }
+        .deadline-picker {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            color: #e2e8f0;
+            border-radius: 0.5rem;
+            padding: 0.5rem;
+            margin-top: 0.5rem;
+            width: 100%;
+        }
+        .deadline-picker::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+        }
+        .deadline-toggle {
+            background: rgba(56, 189, 248, 0.1);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            color: #38bdf8;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1.2rem;
+            width: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .deadline-toggle:hover {
+            background: rgba(56, 189, 248, 0.2);
+        }
+        .deadline-input-wrapper {
+            position: relative;
+            display: flex;
+            gap: 0.5rem;
+            width: 100%;
+        }
+        .deadline-text {
+            display: none;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            color: #e2e8f0;
+            border-radius: 0.5rem;
+            padding: 0.5rem;
+            width: 100%;
+        }
+        .deadline-text::placeholder {
+            color: #64748b;
+        }
+        .deadline-text.active {
+            display: block;
+        }
+        .deadline-picker.hidden {
+            display: none;
+        }
+        /* Column header styles */
+        .column-header {
+            position: relative;
+            padding-bottom: 1rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid rgba(56, 189, 248, 0.2);
+        }
+        .column-header::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 50%;
+            height: 2px;
+            background: linear-gradient(90deg, #38bdf8, transparent);
+        }
+        /* Custom scrollbar */
+        .task-list {
+            max-height: calc(100vh - 300px);
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(56, 189, 248, 0.5) rgba(15, 23, 42, 0.2);
+        }
+        .task-list::-webkit-scrollbar {
+            width: 6px;
+        }
+        .task-list::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.2);
+            border-radius: 3px;
+        }
+        .task-list::-webkit-scrollbar-thumb {
+            background: rgba(56, 189, 248, 0.5);
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="container mx-auto max-w-6xl">
+        <header class="mb-12 text-center">
+            <h1 class="text-5xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-indigo-400 text-transparent bg-clip-text">Kanban Task Board</h1>
+            <p class="text-blue-200 text-lg">Organize your tasks and get things done!</p>
+        </header>
+
+        <div class="mb-8 p-8 rounded-2xl" style="background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1);">
+            <h2 class="text-2xl font-semibold mb-4 text-blue-200">Add New Task</h2>
+            <div class="flex flex-col gap-4">
+                <input type="text" id="new-task-input" class="task-input flex-grow" placeholder="Enter task description...">
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <div class="deadline-input-wrapper">
+                        <input type="datetime-local" id="task-deadline" class="deadline-picker" placeholder="Select or enter deadline">
+                        <input type="text" id="task-deadline-text" class="deadline-text" placeholder="Enter deadline (e.g. tomorrow 3pm, 2024-05-12 14:30)">
+                        <button id="deadline-toggle" class="deadline-toggle" title="Toggle between date picker and text input">📅</button>
+                    </div>
+                    <button id="add-task-btn" class="add-task-btn">Add Task</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div id="todo" class="kanban-column" data-column-id="todo">
+                <h2 class="column-header text-xl font-semibold text-blue-300">To Do 🔥</h2>
+                <div class="task-list space-y-4">
+                </div>
+            </div>
+
+            <div id="inprogress" class="kanban-column" data-column-id="inprogress">
+                <h2 class="column-header text-xl font-semibold text-yellow-300">In Progress 🚀</h2>
+                <div class="task-list space-y-4">
+                </div>
+            </div>
+
+            <div id="done" class="kanban-column" data-column-id="done">
+                <h2 class="column-header text-xl font-semibold text-green-300">Done 🎉</h2>
+                <div class="task-list space-y-4">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <canvas id="confetti-canvas"></canvas>
+
+    <script>
+        // DOM Elements
+        const newTaskInput = document.getElementById('new-task-input');
+        const addTaskBtn = document.getElementById('add-task-btn');
+        const columns = document.querySelectorAll('.kanban-column');
+        const confettiCanvas = document.getElementById('confetti-canvas');
+        const ctx = confettiCanvas.getContext('2d');
+
+        let tasks = []; // Array to store task objects with deadline
+        let draggedTask = null; // To keep track of the task being dragged
+
+        // Add to the top with other DOM elements
+        const deadlineToggle = document.getElementById('deadline-toggle');
+        const deadlinePicker = document.getElementById('task-deadline');
+        const deadlineText = document.getElementById('task-deadline-text');
+
+        // --- Task Management ---
+
+        /**
+         * Creates a DOM element for a task.
+         * @param {object} task - The task object { id, text, column, deadline }
+         * @returns {HTMLElement} The task DOM element.
+         */
+        function createTaskElement(task) {
+            const taskEl = document.createElement('div');
+            taskEl.classList.add('task');
+            taskEl.setAttribute('draggable', 'true');
+            taskEl.setAttribute('data-task-id', task.id);
+
+            // Task content wrapper
+            const contentWrapper = document.createElement('div');
+            
+            // Task text
+            const taskContent = document.createElement('span');
+            taskContent.classList.add('task-content');
+            taskContent.textContent = task.text;
+            
+            // Delete button
+            const deleteBtn = document.createElement('span');
+            deleteBtn.classList.add('delete-btn');
+            deleteBtn.innerHTML = '&#x2716;';
+            deleteBtn.title = 'Delete task';
+            deleteBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                deleteTask(task.id);
+            });
+
+            contentWrapper.appendChild(taskContent);
+            contentWrapper.appendChild(deleteBtn);
+            taskEl.appendChild(contentWrapper);
+
+            // Add deadline info if exists
+            if (task.deadline) {
+                const deadlineInfo = document.createElement('div');
+                deadlineInfo.classList.add('deadline-info');
+                
+                // Update deadline status and display
+                function updateDeadlineStatus() {
+                    const now = new Date();
+                    const deadline = new Date(task.deadline);
+                    const timeLeft = deadline - now;
+                    
+                    // Clear existing classes
+                    deadlineInfo.classList.remove('urgent', 'near');
+                    
+                    if (timeLeft < 0) {
+                        deadlineInfo.innerHTML = `<span>⚠️ Overdue by ${formatTimeLeft(-timeLeft)}</span>`;
+                        deadlineInfo.classList.add('urgent');
+                    } else {
+                        const formattedTime = formatTimeLeft(timeLeft);
+                        if (timeLeft < 24 * 60 * 60 * 1000) { // Less than 24 hours
+                            deadlineInfo.classList.add('urgent');
+                        } else if (timeLeft < 72 * 60 * 60 * 1000) { // Less than 3 days
+                            deadlineInfo.classList.add('near');
+                        }
+                        deadlineInfo.innerHTML = `<span>⏱️ ${formattedTime} remaining</span>`;
+                    }
+                }
+
+                updateDeadlineStatus();
+                // Update the countdown every minute
+                const intervalId = setInterval(updateDeadlineStatus, 60000);
+                // Store the interval ID on the element to clear it when the task is removed
+                taskEl.dataset.intervalId = intervalId;
+
+                taskEl.appendChild(deadlineInfo);
+            }
+
+            // Drag event listeners for the task element
+            taskEl.addEventListener('dragstart', handleDragStart);
+            taskEl.addEventListener('dragend', handleDragEnd);
+
+            // Touch event listeners for mobile drag-and-drop
+            taskEl.addEventListener('touchstart', handleTouchStart, { passive: false }); // passive:false to allow preventDefault
+            taskEl.addEventListener('touchmove', handleTouchMove, { passive: false });
+            taskEl.addEventListener('touchend', handleTouchEnd);
+
+            return taskEl;
+        }
+
+        /**
+         * Formats milliseconds into a human-readable time string.
+         * @param {number} ms - Time in milliseconds
+         * @returns {string} Formatted time string
+         */
+        function formatTimeLeft(ms) {
+            const days = Math.floor(ms / (24 * 60 * 60 * 1000));
+            const hours = Math.floor((ms % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
+            const minutes = Math.floor((ms % (60 * 60 * 1000)) / (60 * 1000));
+            
+            if (days > 0) {
+                return `${days}d ${hours}h`;
+            } else if (hours > 0) {
+                return `${hours}h ${minutes}m`;
+            } else {
+                return `${minutes}m`;
+            }
+        }
+
+        /**
+         * Adds a new task to the "To Do" column.
+         */
+        function addNewTask() {
+            const taskText = newTaskInput.value.trim();
+            let deadline = null;
+
+            // Get deadline from either the picker or text input
+            if (!deadlinePicker.classList.contains('hidden')) {
+                deadline = deadlinePicker.value;
+            } else {
+                const parsedDate = parseUserDate(deadlineText.value);
+                if (parsedDate) {
+                    deadline = parsedDate.toISOString();
+                }
+            }
+
+            if (taskText === '') {
+                newTaskInput.classList.add('border-red-500');
+                newTaskInput.placeholder = "Task description cannot be empty!";
+                setTimeout(() => {
+                    newTaskInput.classList.remove('border-red-500');
+                    newTaskInput.placeholder = "Enter task description...";
+                }, 2000);
+                return;
+            }
+
+            const newTask = {
+                id: `task-${Date.now()}`,
+                text: taskText,
+                column: 'todo',
+                deadline: deadline
+            };
+
+            tasks.push(newTask);
+            renderTasks();
+            saveTasksToLocalStorage();
+            
+            // Clear inputs
+            newTaskInput.value = '';
+            deadlinePicker.value = '';
+            deadlineText.value = '';
+            newTaskInput.focus();
+        }
+
+        /**
+         * Deletes a task by its ID.
+         * @param {string} taskId - The ID of the task to delete.
+         */
+        function deleteTask(taskId) {
+            const taskEl = document.querySelector(`[data-task-id="${taskId}"]`);
+            if (taskEl && taskEl.dataset.intervalId) {
+                clearInterval(Number(taskEl.dataset.intervalId));
+            }
+            tasks = tasks.filter(task => task.id !== taskId);
+            renderTasks();
+            saveTasksToLocalStorage();
+        }
+
+        // --- Drag and Drop Functionality ---
+
+        function handleDragStart(event) {
+            draggedTask = this; // `this` refers to the task element being dragged
+            this.classList.add('dragging');
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', this.dataset.taskId);
+        }
+
+        function handleDragEnd() {
+            this.classList.remove('dragging');
+            draggedTask = null;
+            columns.forEach(col => col.classList.remove('drag-over')); // Clean up drag-over styling
+        }
+
+        function handleDragOver(event) {
+            event.preventDefault(); // Necessary to allow dropping
+            event.dataTransfer.dropEffect = 'move';
+            this.classList.add('drag-over'); // `this` is the column being dragged over
+        }
+
+        function handleDragEnter(event) {
+            event.preventDefault();
+            this.classList.add('drag-over');
+        }
+
+        function handleDragLeave() {
+            this.classList.remove('drag-over');
+        }
+
+        function handleDrop(event) {
+            event.preventDefault();
+            this.classList.remove('drag-over'); // `this` is the column where the task is dropped
+
+            const taskId = event.dataTransfer.getData('text/plain');
+            const targetColumnId = this.dataset.columnId;
+
+            const taskToMove = tasks.find(task => task.id === taskId);
+            if (taskToMove) {
+                const previousColumn = taskToMove.column;
+                taskToMove.column = targetColumnId;
+
+                if (targetColumnId === 'done' && previousColumn !== 'done') {
+                    triggerConfetti();
+                }
+
+                renderTasks();
+                saveTasksToLocalStorage();
+            }
+        }
+
+        // --- Touch Drag and Drop Emulation ---
+        let touchDragElement = null;
+        let touchStartX, touchStartY;
+        let currentDroppable = null;
+        let placeholderElement = null; // Placeholder for visual feedback
+
+        function handleTouchStart(event) {
+            // Only allow dragging with one finger
+            if (event.touches.length > 1) return;
+
+            draggedTask = this; // The task element being touched
+            draggedTask.classList.add('dragging'); // Visual feedback
+
+            // Create a placeholder to show where the item might drop
+            placeholderElement = draggedTask.cloneNode(true);
+            placeholderElement.style.opacity = '0.5';
+            placeholderElement.style.border = '2px dashed #9ca3af'; // Gray dashed border
+            placeholderElement.style.backgroundColor = 'transparent';
+            placeholderElement.innerHTML = ''; // Remove content from placeholder
+
+            // Store initial touch position relative to the element
+            const rect = draggedTask.getBoundingClientRect();
+            touchStartX = event.touches[0].clientX - rect.left;
+            touchStartY = event.touches[0].clientY - rect.top;
+
+            // Make the original element invisible or less prominent during drag
+            // For simplicity, we keep it visible but mark it as 'dragging'
+            event.preventDefault(); // Prevent scrolling while dragging task
+        }
+
+        function handleTouchMove(event) {
+            if (!draggedTask || event.touches.length > 1) return;
+            event.preventDefault(); // Prevent scrolling
+
+            const touchX = event.touches[0].clientX;
+            const touchY = event.touches[0].clientY;
+
+            // Temporarily move the original element for hit detection
+            // This is a common trick for touch drag and drop
+            draggedTask.style.position = 'fixed'; // Take it out of normal flow
+            draggedTask.style.left = (touchX - touchStartX) + 'px';
+            draggedTask.style.top = (touchY - touchStartY) + 'px';
+            draggedTask.style.zIndex = '1000'; // Ensure it's on top
+            draggedTask.style.pointerEvents = 'none'; // So it doesn't interfere with elementFromPoint
+
+
+            // Find the element under the touch point
+            const elementBelow = document.elementFromPoint(touchX, touchY);
+            draggedTask.style.pointerEvents = 'auto'; // Restore pointer events
+
+            if (currentDroppable) {
+                currentDroppable.classList.remove('drag-over');
+                // Remove placeholder if it's in currentDroppable's task list
+                if (placeholderElement.parentNode === currentDroppable.querySelector('.task-list')) {
+                    currentDroppable.querySelector('.task-list').removeChild(placeholderElement);
+                }
+            }
+
+            currentDroppable = null;
+            let targetColumnElement = elementBelow;
+            while (targetColumnElement && !targetColumnElement.classList.contains('kanban-column')) {
+                targetColumnElement = targetColumnElement.parentElement;
+            }
+
+            if (targetColumnElement && targetColumnElement.classList.contains('kanban-column')) {
+                currentDroppable = targetColumnElement;
+                currentDroppable.classList.add('drag-over');
+
+                // Insert placeholder into the potential drop zone
+                const taskList = currentDroppable.querySelector('.task-list');
+                const tasksInColumn = Array.from(taskList.children).filter(child => child !== draggedTask && child !== placeholderElement);
+
+                let inserted = false;
+                for (const child of tasksInColumn) {
+                    const rect = child.getBoundingClientRect();
+                    if (touchY < rect.top + rect.height / 2) {
+                        taskList.insertBefore(placeholderElement, child);
+                        inserted = true;
+                        break;
+                    }
+                }
+                if (!inserted) {
+                    taskList.appendChild(placeholderElement);
+                }
+            }
+        }
+
+        function handleTouchEnd(event) {
+            if (!draggedTask) return;
+
+            // Restore original element's style
+            draggedTask.style.position = '';
+            draggedTask.style.left = '';
+            draggedTask.style.top = '';
+            draggedTask.style.zIndex = '';
+            draggedTask.classList.remove('dragging');
+
+            if (placeholderElement && placeholderElement.parentNode) {
+                placeholderElement.parentNode.removeChild(placeholderElement);
+            }
+            placeholderElement = null;
+
+
+            if (currentDroppable) {
+                currentDroppable.classList.remove('drag-over');
+                const targetColumnId = currentDroppable.dataset.columnId;
+                const taskId = draggedTask.dataset.taskId;
+
+                const taskToMove = tasks.find(task => task.id === taskId);
+                if (taskToMove) {
+                    const previousColumn = taskToMove.column;
+                    taskToMove.column = targetColumnId;
+
+                    if (targetColumnId === 'done' && previousColumn !== 'done') {
+                        triggerConfetti();
+                    }
+                    renderTasks(); // This will place the actual task correctly
+                    saveTasksToLocalStorage();
+                }
+            } else {
+                // If not dropped on a valid column, re-render to snap back
+                renderTasks();
+            }
+
+            draggedTask = null;
+            currentDroppable = null;
+        }
+
+
+        // --- Rendering and Local Storage ---
+
+        /**
+         * Renders all tasks to their respective columns.
+         */
+        function renderTasks() {
+            // Clear existing tasks from columns
+            columns.forEach(column => {
+                column.querySelector('.task-list').innerHTML = '';
+            });
+
+            // Add tasks to their correct columns
+            tasks.forEach(task => {
+                const taskEl = createTaskElement(task);
+                const columnEl = document.getElementById(task.column);
+                if (columnEl) {
+                    columnEl.querySelector('.task-list').appendChild(taskEl);
+                } else {
+                    console.warn(`Column with ID ${task.column} not found for task ${task.id}`);
+                }
+            });
+        }
+
+        /**
+         * Saves the current tasks array to local storage.
+         */
+        function saveTasksToLocalStorage() {
+            localStorage.setItem('kanbanTasks', JSON.stringify(tasks));
+        }
+
+        /**
+         * Loads tasks from local storage.
+         */
+        function loadTasksFromLocalStorage() {
+            const storedTasks = localStorage.getItem('kanbanTasks');
+            if (storedTasks) {
+                tasks = JSON.parse(storedTasks);
+            }
+        }
+
+        // --- Confetti Animation ---
+        let confettiParticles = [];
+        const confettiColors = ['#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3', '#03a9f4', '#00bcd4', '#009688', '#4caf50', '#8bc34a', '#cddc39', '#ffeb3b', '#ffc107', '#ff9800', '#ff5722'];
+
+        function ConfettiParticle() {
+            this.x = confettiCanvas.width / 2;
+            this.y = confettiCanvas.height / 2; // Start from center, or from where task was dropped
+            this.size = Math.random() * 7 + 3; // Size between 3 and 10
+            this.speedX = Math.random() * 6 - 3; // Horizontal speed
+            this.speedY = Math.random() * -10 - 5; // Upward speed, then falls
+            this.color = confettiColors[Math.floor(Math.random() * confettiColors.length)];
+            this.opacity = 1;
+            this.rotation = Math.random() * 360;
+            this.spin = Math.random() * 20 - 10; // Rotation speed
+        }
+
+        ConfettiParticle.prototype.update = function() {
+            this.x += this.speedX;
+            this.y += this.speedY;
+            this.speedY += 0.2; // Gravity
+            this.opacity -= 0.01; // Fade out
+            this.rotation += this.spin;
+        };
+
+        ConfettiParticle.prototype.draw = function() {
+            ctx.save();
+            ctx.globalAlpha = this.opacity;
+            ctx.fillStyle = this.color;
+            ctx.translate(this.x + this.size / 2, this.y + this.size / 2);
+            ctx.rotate(this.rotation * Math.PI / 180);
+            ctx.fillRect(-this.size / 2, -this.size / 2, this.size, this.size * 2); // Rectangular confetti
+            ctx.restore();
+        };
+
+        function triggerConfetti() {
+            confettiCanvas.width = window.innerWidth;
+            confettiCanvas.height = window.innerHeight;
+            confettiParticles = [];
+            for (let i = 0; i < 150; i++) { // Number of confetti particles
+                confettiParticles.push(new ConfettiParticle());
+            }
+            animateConfetti();
+        }
+
+        let confettiAnimationId;
+        function animateConfetti() {
+            ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+            let stillAnimating = false;
+            confettiParticles.forEach(particle => {
+                if (particle.opacity > 0 && particle.y < confettiCanvas.height) {
+                    particle.update();
+                    particle.draw();
+                    stillAnimating = true;
+                }
+            });
+
+            if (stillAnimating) {
+                confettiAnimationId = requestAnimationFrame(animateConfetti);
+            } else {
+                ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height); // Clear canvas when done
+                cancelAnimationFrame(confettiAnimationId);
+            }
+        }
+
+
+        // --- Event Listeners ---
+        addTaskBtn.addEventListener('click', addNewTask);
+        newTaskInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                addNewTask();
+            }
+        });
+
+        // Add drag event listeners to columns
+        columns.forEach(column => {
+            column.addEventListener('dragover', handleDragOver);
+            column.addEventListener('dragenter', handleDragEnter);
+            column.addEventListener('dragleave', handleDragLeave);
+            column.addEventListener('drop', handleDrop);
+        });
+
+        // Add toggle functionality
+        deadlineToggle.addEventListener('click', () => {
+            deadlinePicker.classList.toggle('hidden');
+            deadlineText.classList.toggle('active');
+            
+            // If switching to text input, copy the picker value
+            if (deadlineText.classList.contains('active') && deadlinePicker.value) {
+                const date = new Date(deadlinePicker.value);
+                deadlineText.value = date.toLocaleString();
+            }
+            // If switching to picker and text has a valid date, copy it
+            else if (!deadlineText.classList.contains('active') && deadlineText.value) {
+                const parsedDate = parseUserDate(deadlineText.value);
+                if (parsedDate) {
+                    deadlinePicker.value = parsedDate.toISOString().slice(0, 16);
+                }
+            }
+        });
+
+        // Parse user-friendly date inputs
+        function parseUserDate(input) {
+            input = input.toLowerCase().trim();
+            const now = new Date();
+            
+            // Handle relative dates
+            if (input === 'today') {
+                return new Date(now.setHours(17, 0, 0, 0)); // Default to 5 PM today
+            }
+            if (input === 'tomorrow') {
+                return new Date(now.setDate(now.getDate() + 1));
+            }
+            if (input.includes('next')) {
+                const days = {
+                    'sunday': 0, 'monday': 1, 'tuesday': 2, 'wednesday': 3,
+                    'thursday': 4, 'friday': 5, 'saturday': 6
+                };
+                for (const [day, value] of Object.entries(days)) {
+                    if (input.includes(day)) {
+                        const today = now.getDay();
+                        const daysUntil = (value - today + 7) % 7;
+                        return new Date(now.setDate(now.getDate() + daysUntil));
+                    }
+                }
+            }
+
+            // Try parsing natural language with relative time
+            const timeMatch = input.match(/(\d+)\s*(min|hour|day|week)s?\s*(from now)?/);
+            if (timeMatch) {
+                const [, amount, unit] = timeMatch;
+                const multipliers = {
+                    min: 60 * 1000,
+                    hour: 60 * 60 * 1000,
+                    day: 24 * 60 * 60 * 1000,
+                    week: 7 * 24 * 60 * 60 * 1000
+                };
+                return new Date(now.getTime() + (amount * multipliers[unit]));
+            }
+
+            // Try parsing standard date formats
+            const date = new Date(input);
+            if (!isNaN(date.getTime())) {
+                return date;
+            }
+
+            // Try parsing custom format (e.g., "tomorrow 3pm")
+            const parts = input.split(' ');
+            if (parts.length === 2) {
+                const [dayPart, timePart] = parts;
+                const baseDate = parseUserDate(dayPart);
+                if (baseDate) {
+                    const timeMatch = timePart.match(/(\d+)(?::(\d+))?\s*(am|pm)?/i);
+                    if (timeMatch) {
+                        let [, hours, minutes = '0', meridiem] = timeMatch;
+                        hours = parseInt(hours);
+                        if (meridiem && meridiem.toLowerCase() === 'pm' && hours < 12) {
+                            hours += 12;
+                        }
+                        baseDate.setHours(hours, parseInt(minutes));
+                        return baseDate;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        // --- Initialization ---
+        // Load tasks from local storage and render them when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            loadTasksFromLocalStorage();
+            renderTasks();
+
+            // Adjust canvas size on window resize for confetti
+            window.addEventListener('resize', () => {
+                if (confettiParticles.length > 0) { // Only resize if confetti is active or was recently
+                    confettiCanvas.width = window.innerWidth;
+                    confettiCanvas.height = window.innerHeight;
+                }
+            });
+        });
+    </script>
+</body>
+</html>
