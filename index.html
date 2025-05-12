@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kanban Task Tracker</title>
+    <title>Streamline</title> {/* <-- Changed here */}
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -195,7 +195,7 @@
 <body class="p-4 md:p-8">
     <div class="container mx-auto max-w-6xl">
         <header class="mb-12 text-center">
-            <h1 class="text-5xl font-bold mb-4 bg-gradient-to-r from-orange-400 to-yellow-400 text-transparent bg-clip-text">Kanban Task Board</h1>
+            <h1 class="text-5xl font-bold mb-4 bg-gradient-to-r from-orange-400 to-yellow-400 text-transparent bg-clip-text">Streamline</h1> {/* <-- Changed here */}
             <p class="text-gray-600 text-lg">Organize your tasks and get things done!</p>
         </header>
 
@@ -695,6 +695,7 @@
                 confettiAnimationId = requestAnimationFrame(animateConfetti);
             } else {
                 ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height); // Clear canvas when done
+
                 cancelAnimationFrame(confettiAnimationId);
             }
         }
