@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Streamline - Futuristic</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/lucide-static@latest/dist/lucide.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -381,27 +381,25 @@
 
             // Task content wrapper
             const contentWrapper = document.createElement('div');
-
+            
             // Task text
             const taskContent = document.createElement('span');
             taskContent.classList.add('task-content');
             taskContent.textContent = task.text;
-
-            // Delete button with icon
+            
+            // Delete button
             const deleteBtn = document.createElement('span');
             deleteBtn.classList.add('delete-btn');
-            // Use Lucide trash icon
-            deleteBtn.innerHTML = '<i data-lucide="trash-2" class="w-4 h-4"></i>';
+            deleteBtn.innerHTML = '&#x2716;';
             deleteBtn.title = 'Delete task';
             deleteBtn.addEventListener('click', (e) => {
-                e.stopPropagation(); // Prevent triggering drag start
+                e.stopPropagation();
                 deleteTask(task.id);
             });
 
             contentWrapper.appendChild(taskContent);
-            // Append delete button directly to taskEl for absolute positioning
+            contentWrapper.appendChild(deleteBtn);
             taskEl.appendChild(contentWrapper);
-            taskEl.appendChild(deleteBtn);
 
             // Add deadline info if exists
             if (task.deadline) {
@@ -523,73 +521,48 @@
 
 
         /**
-         * Adds a new task to the "To Do" column based on user input.
+         * Adds a new task to the "To Do" column.
          */
         function addNewTask() {
             const taskText = newTaskInput.value.trim();
             let deadline = null;
-            let deadlineInputUsed = null; // Track which input was used
 
-            // Determine deadline based on which input is visible
-            if (!deadlinePicker.classList.contains('hidden') && deadlinePicker.value) {
-                 // Value from datetime-local is already in a good format
-                 deadline = deadlinePicker.value;
-                 deadlineInputUsed = deadlinePicker;
-            } else if (deadlineText.classList.contains('active') && deadlineText.value.trim()) {
-                 const parsedDate = parseUserDate(deadlineText.value.trim()); // Use the updated parser
-                 if (parsedDate) {
-                     deadline = parsedDate.toISOString(); // Store as ISO string
-                     deadlineInputUsed = deadlineText;
-                 } else {
-                     // Handle invalid date text input
-                     deadlineText.classList.add('border-red-500');
-                     deadlineText.focus();
-                      // Add a temporary placeholder or message
-                     const originalPlaceholder = deadlineText.placeholder;
-                     deadlineText.value = ''; // Clear invalid input
-                     deadlineText.placeholder = "Invalid date format!";
-                     setTimeout(() => {
-                         deadlineText.classList.remove('border-red-500');
-                         deadlineText.placeholder = originalPlaceholder;
-                     }, 2500);
-                     return; // Stop task creation if date is invalid
-                 }
+            // Get deadline from either the picker or text input
+            if (!deadlinePicker.classList.contains('hidden')) {
+                deadline = deadlinePicker.value;
+            } else if (deadlineText.value && deadlineText.value.trim() !== '') {
+                const parsedDate = parseUserDate(deadlineText.value);
+                if (parsedDate) {
+                    deadline = parsedDate.toISOString();
+                }
             }
 
-
-            // Validate task text
             if (taskText === '') {
-                newTaskInput.classList.add('border-red-500'); // Use Tailwind for border
-                newTaskInput.focus();
-                const originalPlaceholder = newTaskInput.placeholder;
+                newTaskInput.classList.add('border-red-500');
                 newTaskInput.placeholder = "Task description cannot be empty!";
                 setTimeout(() => {
                     newTaskInput.classList.remove('border-red-500');
-                    newTaskInput.placeholder = originalPlaceholder;
-                }, 2500);
+                    newTaskInput.placeholder = "Enter task description...";
+                }, 2000);
                 return;
             }
 
-            // Create the new task object
             const newTask = {
-                id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`, // More unique ID
+                id: `task-${Date.now()}`,
                 text: taskText,
-                column: 'todo', // Default column
-                deadline: deadline // Store ISO string or null
+                column: 'todo',
+                deadline: deadline
             };
 
-            tasks.push(newTask); // Add to the tasks array
-            renderTasks(); // Update the UI
-            saveTasksToLocalStorage(); // Persist changes
-
-            // Clear inputs after adding
+            tasks.push(newTask);
+            renderTasks();
+            saveTasksToLocalStorage();
+            
+            // Clear inputs
             newTaskInput.value = '';
-            if (deadlineInputUsed === deadlinePicker) {
-                deadlinePicker.value = '';
-            } else if (deadlineInputUsed === deadlineText) {
-                deadlineText.value = '';
-            }
-            newTaskInput.focus(); // Set focus back to task input
+            deadlinePicker.value = '';
+            deadlineText.value = '';
+            newTaskInput.focus();
         }
 
         /**
@@ -1310,63 +1283,23 @@
             column.addEventListener('drop', handleDrop);
         });
 
-        // Add toggle functionality for deadline input
+        // Add toggle functionality
         deadlineToggle.addEventListener('click', () => {
-            const isPickerVisible = !deadlinePicker.classList.contains('hidden');
-
-            // Toggle visibility classes/styles
             deadlinePicker.classList.toggle('hidden');
-            deadlineText.classList.toggle('active'); // Controls display via CSS
-            deadlineText.style.display = deadlineText.classList.contains('active') ? 'block' : 'none';
-
-
-            // Update toggle button icon and title
-            const toggleIcon = deadlineToggle.querySelector('i');
-            if (isPickerVisible) {
-                // Switched TO text input
-                toggleIcon.setAttribute('data-lucide', 'calendar-check');
-                deadlineToggle.title = 'Switch to date picker input';
-                // Try to convert picker value to text
-                if (deadlinePicker.value) {
-                    try {
-                        const date = new Date(deadlinePicker.value);
-                        // Use a locale-sensitive format that's usually understandable
-                        deadlineText.value = date.toLocaleString([], { dateStyle: 'short', timeStyle: 'short' });
-                    } catch (e) { deadlineText.value = ''; }
-                } else {
-                    deadlineText.value = '';
-                }
-                deadlineText.focus();
-            } else {
-                // Switched TO picker input
-                toggleIcon.setAttribute('data-lucide', 'text-cursor-input');
-                deadlineToggle.title = 'Switch to text input';
-                // Try to parse text input and set picker value
-                if (deadlineText.value) {
-                    const parsedDate = parseUserDate(deadlineText.value); // Use updated parser
-                    if (parsedDate) {
-                        try {
-                             // Format for datetime-local (YYYY-MM-DDTHH:mm)
-                             const year = parsedDate.getFullYear();
-                             const month = (parsedDate.getMonth() + 1).toString().padStart(2, '0');
-                             const day = parsedDate.getDate().toString().padStart(2, '0');
-                             const hours = parsedDate.getHours().toString().padStart(2, '0');
-                             const minutes = parsedDate.getMinutes().toString().padStart(2, '0');
-                             deadlinePicker.value = `${year}-${month}-${day}T${hours}:${minutes}`;
-                        } catch(e) { deadlinePicker.value = '';}
-                    } else {
-                        // If parsing fails, maybe provide feedback or just clear
-                        deadlinePicker.value = '';
-                        // Optionally indicate error on text input
-                         deadlineText.classList.add('border-red-500');
-                         setTimeout(() => deadlineText.classList.remove('border-red-500'), 2000);
-                    }
-                } else {
-                     deadlinePicker.value = '';
-                }
-                deadlinePicker.focus();
+            deadlineText.classList.toggle('hidden');
+            
+            // If switching to text input, copy the picker value
+            if (!deadlineText.classList.contains('hidden') && deadlinePicker.value) {
+                const date = new Date(deadlinePicker.value);
+                deadlineText.value = date.toLocaleString();
             }
-             lucide.createIcons({ nodes: [toggleIcon] }); // Update the icon
+            // If switching to picker and text has a valid date, copy it
+            else if (!deadlinePicker.classList.contains('hidden') && deadlineText.value) {
+                const parsedDate = parseUserDate(deadlineText.value);
+                if (parsedDate) {
+                    deadlinePicker.value = parsedDate.toISOString().slice(0, 16);
+                }
+            }
         });
 
         // --- Initialization ---
