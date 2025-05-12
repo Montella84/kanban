@@ -3,41 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Streamline</title> {/* <-- Changed here */}
+    <title>Streamline</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: 'Space Grotesk', sans-serif;
-            background: linear-gradient(135deg, #fff5e6 0%, #fff9f0 100%);
-            color: #333333;
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f8f9fe 0%, #eef1ff 100%);
+            color: #2d3748;
             min-height: 100vh;
             overscroll-behavior: none;
         }
         .kanban-column {
             min-height: 300px;
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 149, 0, 0.1);
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
             border-radius: 1rem;
             padding: 1.5rem;
             transition: all 0.3s ease;
+            box-shadow: 0 4px 20px -5px rgba(0, 0, 0, 0.05);
         }
         .kanban-column.drag-over {
-            background: rgba(255, 243, 230, 0.95);
+            background: rgba(240, 245, 255, 0.95);
             transform: scale(1.02);
-            box-shadow: 0 0 20px rgba(255, 149, 0, 0.2);
+            box-shadow: 0 0 25px rgba(99, 102, 241, 0.15);
         }
         .task {
             background: rgba(255, 255, 255, 0.95);
-            padding: 1rem 1.25rem;
-            border-radius: 0.75rem;
+            padding: 1.25rem;
+            border-radius: 0.8rem;
             margin-bottom: 1rem;
             cursor: grab;
-            border: 1px solid rgba(255, 149, 0, 0.2);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
-                        0 2px 4px -1px rgba(0, 0, 0, 0.06),
-                        0 0 0 1px rgba(255, 149, 0, 0.1);
+            border: 1px solid rgba(226, 232, 240, 0.7);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
             transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
@@ -48,14 +47,14 @@
             top: 0;
             left: 0;
             right: 0;
-            height: 2px;
-            background: linear-gradient(90deg, #ff9500, #ffcc00);
-            opacity: 0.5;
+            height: 3px;
+            background: linear-gradient(90deg, #6366f1, #8b5cf6);
+            opacity: 0.7;
         }
         .task:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 15px -3px rgba(255, 149, 0, 0.2);
-            border-color: rgba(255, 149, 0, 0.4);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px -5px rgba(99, 102, 241, 0.15);
+            border-color: rgba(99, 102, 241, 0.2);
         }
         .task:active {
             cursor: grabbing;
@@ -63,39 +62,40 @@
         }
         .task.dragging {
             opacity: 0.7;
-            box-shadow: 0 20px 25px -5px rgba(255, 149, 0, 0.25);
+            box-shadow: 0 20px 25px -5px rgba(99, 102, 241, 0.25);
         }
         .task-input {
             background: rgba(255, 255, 255, 0.95);
             border-radius: 0.75rem;
             padding: 1rem 1.25rem;
-            border: 1px solid rgba(255, 149, 0, 0.2);
-            color: #333333;
+            border: 1px solid rgba(226, 232, 240, 0.7);
+            color: #2d3748;
             transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
         }
         .task-input:focus {
             outline: none;
-            border-color: #ff9500;
-            box-shadow: 0 0 0 3px rgba(255, 149, 0, 0.2);
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
         }
         .add-task-btn {
             border-radius: 0.75rem;
             padding: 1rem 2rem;
-            background: linear-gradient(135deg, #ff9500 0%, #ffcc00 100%);
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
             color: white;
             font-weight: 600;
             transition: all 0.3s ease;
             border: none;
-            text-transform: uppercase;
             letter-spacing: 0.5px;
+            box-shadow: 0 4px 10px rgba(99, 102, 241, 0.25);
         }
         .add-task-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 0 20px rgba(255, 149, 0, 0.4);
+            box-shadow: 0 6px 15px rgba(99, 102, 241, 0.35);
         }
         .delete-btn {
             font-size: 0.9rem;
-            color: #ff6b6b;
+            color: #ef4444;
             cursor: pointer;
             float: right;
             padding: 0.3rem;
@@ -103,46 +103,48 @@
             line-height: 1;
             opacity: 0.7;
             transition: all 0.2s;
-            background: rgba(255, 107, 107, 0.1);
+            background: rgba(239, 68, 68, 0.1);
         }
         .delete-btn:hover {
             opacity: 1;
-            background: rgba(255, 107, 107, 0.2);
+            background: rgba(239, 68, 68, 0.2);
             transform: scale(1.1);
         }
         .task-content {
             word-break: break-word;
-            color: #333333;
+            color: #2d3748;
+            font-weight: 500;
         }
         .deadline-info {
             font-size: 0.85rem;
-            margin-top: 0.5rem;
-            padding-top: 0.5rem;
-            border-top: 1px solid rgba(255, 149, 0, 0.2);
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid rgba(226, 232, 240, 0.8);
             display: flex;
             align-items: center;
             gap: 0.5rem;
-            color: #666666;
+            color: #64748b;
         }
         .deadline-info.urgent {
-            color: #ff6b6b;
+            color: #ef4444;
         }
         .deadline-info.near {
-            color: #ff9500;
+            color: #f59e0b;
         }
         .deadline-picker {
             background: rgba(255, 255, 255, 0.95);
-            border: 1px solid rgba(255, 149, 0, 0.2);
-            color: #333333;
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            color: #2d3748;
             border-radius: 0.5rem;
-            padding: 0.5rem;
+            padding: 0.75rem;
             margin-top: 0.5rem;
             width: 100%;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
         }
         .deadline-toggle {
-            background: rgba(255, 149, 0, 0.1);
-            border: 1px solid rgba(255, 149, 0, 0.2);
-            color: #ff9500;
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            color: #6366f1;
             padding: 0.5rem;
             border-radius: 0.5rem;
             cursor: pointer;
@@ -154,14 +156,16 @@
             justify-content: center;
         }
         .deadline-toggle:hover {
-            background: rgba(255, 149, 0, 0.2);
+            background: rgba(99, 102, 241, 0.2);
         }
         .column-header {
             position: relative;
             padding-bottom: 1rem;
             margin-bottom: 1.5rem;
-            border-bottom: 2px solid rgba(255, 149, 0, 0.2);
-            color: #333333;
+            border-bottom: 2px solid rgba(226, 232, 240, 0.8);
+            color: #4b5563;
+            font-weight: 600;
+            letter-spacing: 0.5px;
         }
         .column-header::after {
             content: '';
@@ -170,24 +174,24 @@
             left: 0;
             width: 50%;
             height: 2px;
-            background: linear-gradient(90deg, #ff9500, transparent);
+            background: linear-gradient(90deg, #6366f1, transparent);
         }
         /* Custom scrollbar */
         .task-list {
             max-height: calc(100vh - 300px);
             overflow-y: auto;
             scrollbar-width: thin;
-            scrollbar-color: rgba(255, 149, 0, 0.5) rgba(0, 0, 0, 0.1);
+            scrollbar-color: rgba(99, 102, 241, 0.5) rgba(0, 0, 0, 0.1);
         }
         .task-list::-webkit-scrollbar {
-            width: 6px;
+            width: 5px;
         }
         .task-list::-webkit-scrollbar-track {
-            background: rgba(0, 0, 0, 0.05);
+            background: rgba(0, 0, 0, 0.03);
             border-radius: 3px;
         }
         .task-list::-webkit-scrollbar-thumb {
-            background: rgba(255, 149, 0, 0.5);
+            background: rgba(99, 102, 241, 0.5);
             border-radius: 3px;
         }
     </style>
@@ -195,19 +199,19 @@
 <body class="p-4 md:p-8">
     <div class="container mx-auto max-w-6xl">
         <header class="mb-12 text-center">
-            <h1 class="text-5xl font-bold mb-4 bg-gradient-to-r from-orange-400 to-yellow-400 text-transparent bg-clip-text">Streamline</h1> {/* <-- Changed here */}
+            <h1 class="text-5xl font-bold mb-4 bg-gradient-to-r from-indigo-500 to-purple-500 text-transparent bg-clip-text">Streamline</h1>
             <p class="text-gray-600 text-lg">Organize your tasks and get things done!</p>
         </header>
 
-        <div class="mb-8 p-8 rounded-2xl bg-white/90 backdrop-blur-sm border border-orange-100">
-            <h2 class="text-2xl font-semibold mb-4 text-gray-800">Add New Task</h2>
+        <div class="mb-8 p-8 rounded-2xl bg-white/90 backdrop-blur-sm border border-gray-100 shadow-lg">
+            <h2 class="text-2xl font-semibold mb-6 text-gray-800">Add New Task</h2>
             <div class="flex flex-col gap-4">
                 <input type="text" id="new-task-input" class="task-input flex-grow" placeholder="Enter task description...">
                 <div class="flex flex-col sm:flex-row gap-4">
-                    <div class="deadline-input-wrapper">
+                    <div class="deadline-input-wrapper flex-grow">
                         <input type="datetime-local" id="task-deadline" class="deadline-picker" placeholder="Select or enter deadline">
-                        <input type="text" id="task-deadline-text" class="deadline-text" placeholder="Enter deadline (e.g. tomorrow 3pm, 2024-05-12 14:30)">
-                        <button id="deadline-toggle" class="deadline-toggle" title="Toggle between date picker and text input">📅</button>
+                        <input type="text" id="task-deadline-text" class="deadline-text hidden" placeholder="Enter deadline (e.g. tomorrow 3pm, 2024-05-12 14:30)">
+                        <button id="deadline-toggle" class="deadline-toggle mt-2" title="Toggle between date picker and text input">📅</button>
                     </div>
                     <button id="add-task-btn" class="add-task-btn">Add Task</button>
                 </div>
@@ -216,19 +220,19 @@
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div id="todo" class="kanban-column" data-column-id="todo">
-                <h2 class="column-header text-xl font-semibold text-orange-600">to do</h2>
+                <h2 class="column-header text-xl font-semibold text-indigo-600">to do</h2>
                 <div class="task-list space-y-4">
                 </div>
             </div>
 
             <div id="inprogress" class="kanban-column" data-column-id="inprogress">
-                <h2 class="column-header text-xl font-semibold text-orange-500">in progress</h2>
+                <h2 class="column-header text-xl font-semibold text-indigo-500">in progress</h2>
                 <div class="task-list space-y-4">
                 </div>
             </div>
 
             <div id="done" class="kanban-column" data-column-id="done">
-                <h2 class="column-header text-xl font-semibold text-orange-400">done</h2>
+                <h2 class="column-header text-xl font-semibold text-indigo-400">done</h2>
                 <div class="task-list space-y-4">
                 </div>
             </div>
